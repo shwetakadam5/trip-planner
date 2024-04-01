@@ -160,7 +160,7 @@ const userCityEl = $("#user-city");
 const userCountryEl = $("#user-country");
 const userZipCodeEl = $("#user-zipcode");
 
-const allFields = $([]).add(userFirstNameEl).add(userLastNameEl).add(userDateOfBirthEl).add(userAddressEl);
+const allFields = $([]).add(userFirstNameEl).add(userLastNameEl).add(userDateOfBirthEl).add(userAddressEl).add(userCityEl).add(userCountryEl).add(userZipCodeEl);
 const userErrMsgEl = $(".validateTips");
 const userSuccessMsgEl = $(".successMsg");
 const MINOR_AGE_LIMIT = 12;
@@ -202,8 +202,8 @@ function addUser() {
     // add code to validate and add user to local storage
     console.log("In addUser function");
 
-    var valid = true;
-    var isMinorAge = false;
+    let valid = true;
+    let isMinorAge = false;
     allFields.removeClass("ui-state-error");
     console.log(userFirstNameEl.val());
     valid = valid && checkLength(userFirstNameEl, "First Name");
@@ -236,7 +236,7 @@ function addUser() {
         console.log(`The person's age is approximately ${ageInYears} years and is minor check: ${isMinorAge}`);
 
 
-        const newUserToCreate = {
+        let newUserToCreate = {
             userid: crypto.randomUUID(),
             firstname: userFirstNameEl.val(),
             lastname: userLastNameEl.val(),
@@ -246,11 +246,43 @@ function addUser() {
             usercountry: userCountryEl.val(),
             userzipcode: userZipCodeEl.val(),
             isminor: isMinorAge,
+            userlocationcoordinates: {
+                lat: "",
+                lon: "",
+            },
         };
 
-        addUsers(newUserToCreate);
+        //start to get coords
 
-        dialog.dialog("close");
+        if (userCityEl.val().trim() != "") {
+            let cityName = userCityEl.val().toLowerCase();
+            const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=1&appid=${API_KEY}`;
+            fetch(geoUrl)
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    let coordinates = {
+                        lat: data[0].lat,
+                        lon: data[0].lon
+                    }
+                    newUserToCreate.userlocationcoordinates.lat = coordinates.lat;
+                    newUserToCreate.userlocationcoordinates.lon = coordinates.lon;
+
+                    console.log(newUserToCreate);
+                    addUsers(newUserToCreate);
+
+
+                    initMap();
+                    dialog.dialog("close");
+
+                });
+
+
+        }
+        //end to get coords
+
+
     }
     return valid;
 }
@@ -262,7 +294,7 @@ $("#add-user").button().on("click", function () {
 });
 
 
-var dialog = $("#dialog-form").dialog({
+let dialog = $("#dialog-form").dialog({
     autoOpen: false,
     height: 525,
     width: 500,
@@ -288,7 +320,7 @@ var dialog = $("#dialog-form").dialog({
     }
 });
 
-var userform = dialog.find("form").on("submit", function (event) {
+let userform = dialog.find("form").on("submit", function (event) {
     event.preventDefault();
     addUser();
 });
@@ -296,6 +328,8 @@ var userform = dialog.find("form").on("submit", function (event) {
 
 // When the page loads make the  date field a date picker
 $(document).ready(function () {
+
+    initMap();
     //datepicker initialization (jQueryUI)
     $('#user-dob').datepicker({
         changeMonth: true,
@@ -311,6 +345,13 @@ $(document).ready(function () {
 let map;
 // initMap is now async
 async function initMap() {
+
+    console.log("INIT MAP INVOKED")
+
+    let addedUsers = getLocalUsers();
+
+
+
     // Request libraries when needed, not in the script tag.
     let { Map } = await google.maps.importLibrary("maps");
     let { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
@@ -321,35 +362,46 @@ async function initMap() {
         zoom: 6,
         mapId: "DEMO_MAP_ID",
     });
+    if (addedUsers != null)
+        for (const user of addedUsers) {
+            console.log("In the user loop")
+            console.log(user);
+            addMapMarkers({
+                locationcoords: new google.maps.LatLng(user.userlocationcoordinates.lat, user.userlocationcoordinates.lon),
+                markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+                titleTxt: user.firstname,
+                markerInfo: user.firstname + "" + user.usercity,
 
-
-
-    addMapMarkers(
-        {
-            locationcoords: new google.maps.LatLng(-37.81400000, 144.96332000),
-            markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-            titleTxt: "titletxt",
-            markerInfo: "Marker Pin Information"
+            });
         }
-    );
 
-    addMapMarkers(
-        {
-            locationcoords: new google.maps.LatLng(-34.921230, 138.599503),
-            markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-            titleTxt: "titletxt1",
-            markerInfo: "Marker Pin Information1"
-        }
-    );
 
-    addMapMarkers(
-        {
-            locationcoords: new google.maps.LatLng(-36.848461, 174.763336),
-            // markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-            titleTxt: "titletxt2",
-            markerInfo: "Marker Pin Information3"
-        }
-    );
+    // addMapMarkers(
+    //     {
+    //         locationcoords: new google.maps.LatLng(-37.81400000, 144.96332000),
+    //         markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+    //         titleTxt: "titletxt",
+    //         markerInfo: "Marker Pin Information"
+    //     }
+    // );
+
+    // addMapMarkers(
+    //     {
+    //         locationcoords: new google.maps.LatLng(-34.921230, 138.599503),
+    //         markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+    //         titleTxt: "titletxt1",
+    //         markerInfo: "Marker Pin Information1"
+    //     }
+    // );
+
+    // addMapMarkers(
+    //     {
+    //         locationcoords: new google.maps.LatLng(-36.848461, 174.763336),
+    //         // markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+    //         titleTxt: "titletxt2",
+    //         markerInfo: "Marker Pin Information3"
+    //     }
+    // );
 
     //function to add markers 
     function addMapMarkers(markerDetails) {
@@ -393,7 +445,7 @@ async function initMap() {
 
 
 
-initMap();
+
 
 
 
