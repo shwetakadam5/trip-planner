@@ -5,19 +5,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Travel Dashboard</title>
-
     <script src="https://kit.fontawesome.com/a3a62ca005.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css" />
-    <!-- <link rel="stylesheet" href="/vendors/@form-validation/umd/styles/index.min.css" /> -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.js"></script>
+    <script src="https://use.fontawesome.com/releases/v6.2.0/js/all.js"></script>
     <link rel="stylesheet" href="./assets/css/style.css" />
 </head>
 
 <body>
+    <script>
+        (g => { var h, a, k, p = "The Google Maps JavaScript API", c = "google", l = "importLibrary", q = "__ib__", m = document, b = window; b = b[c] || (b[c] = {}); var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams, u = () => h || (h = new Promise(async (f, n) => { await (a = m.createElement("script")); e.set("libraries", [...r] + ""); for (k in g) e.set(k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()), g[k]); e.set("callback", c + ".maps." + q); a.src = `https://maps.${c}apis.com/maps/api/js?` + e; d[q] = f; a.onerror = () => h = n(Error(p + " could not load.")); a.nonce = m.querySelector("script[nonce]")?.nonce || ""; m.head.append(a) })); d[l] ? console.warn(p + " only loads once. Ignoring:", g) : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)) })({
+            key: "AIzaSyB9ViKmP3YhPiC9Mqz6jdr9Rio9MrtItaE",
+            v: "weekly",
+            // Use the 'v' parameter to indicate the version to use (weekly, beta, alpha, etc.).
+            // Add other bootstrap parameters as needed, using camel case.
+        });
+    </script>
     <header>
         <h1>Travel Dashboard</h1>
     </header>
@@ -26,6 +33,7 @@
             <div class="container">
                 <h2>Welcome to your Travel Dashboard</h2>
                 <p>Add your travel partners details, then add trips to see them all in one place.</p>
+                <div id="map"></div>
                 <button id="add-user" class="add-button">Add User</button>
                 <button id="add-travel" class="add-button">Add Travel</button>
                 <p class="successMsg">User successfully created. User
@@ -34,11 +42,8 @@
             </div>
         </div>
         <!-- Start Created a modal with a form to add users -->
-        <!-- <div id="dialog-form" title="Create new user"> -->
-        <!--  -->
 
         <div id="dialog-form" class="modal" title="Create new user">
-
             <div class="modal-background">
                 <div class="modal-content">
                     <p class="validateTips" style="color: white;">All form fields are required.</p>
@@ -81,24 +86,42 @@
                             <div class="field">
                                 <label class="label">Address</label>
                                 <div class="control">
-                                    <textarea id="user-address" class="textarea" name="useraddress"
-                                        placeholder="e.g Address Line 1.." title="Address" required></textarea>
+                                    <textarea id="user-address" class="input" name="useraddress1"
+                                        placeholder="e.g. Street No and Name" title="Address" required></textarea>
                                 </div>
                             </div>
 
-                            <!-- <div class="field">
-                <label class= "label">Country</label>
-                <div class="select is-small">
-                  <select id="country" name="country"></select>
-                </div>
-              </div>
-
-              <div class="field">
-                <label class= "label">State</label>
-                <div class="select is-small">
-                  <select name="state" id="state"></select>
-                </div>
-              </div> -->
+                            <div class="field">
+                                <label class="label">City</label>
+                                <div class="control">
+                                    <input id="user-city" class="input" type="text" name="city" placeholder="City"
+                                        title="e.g. Melbourne" required>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-left">
+                                    <div class="level-item">
+                                        <div class="field">
+                                            <label class="label">Country</label>
+                                            <div class="control">
+                                                <input id="user-country" class="input" type="text" name="country"
+                                                    placeholder="e.g. Australia" title="Country" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="level-right">
+                                    <div class="level-item">
+                                        <div class="field">
+                                            <label class="label">Zip Code</label>
+                                            <div class="control">
+                                                <input id="user-zipcode" class="input" type="text" name="zipcode"
+                                                    placeholder="e.g. 3133" title="Zip Code" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
                         </div>
@@ -107,7 +130,7 @@
 
                 </div>
             </div>
-            <!-- </div> -->
+
             <!-- Start Created a modal with a form to add users -->
             <div id="data" class="hidden">
                 <div id="trip-inner" class="container">
@@ -126,8 +149,6 @@
         <p>&copy; 2024 Travel Dashboard. All rights reserved to leapFrogs.</p>
     </footer>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.3/es6-shim.min.js"></script>
-    <!-- <script src="/vendors/@form-validation/umd/bundle/popular.min.js"></script>
-  <script src="/vendors/@form-validation/umd/plugin-bulma/index.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>

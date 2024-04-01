@@ -123,9 +123,11 @@ img.card-header-title {
     color: white;
 }
 
-
 .modal-content {
     max-width: 30rem;
-    /* --bulma-modal-content-width =30rem */
-    /* Set your desired width here */
+}
+
+#map {
+    height: 400px;
+    width: 100%;
 }

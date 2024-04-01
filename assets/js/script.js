@@ -6,7 +6,7 @@ const dashboardEl = $("#trip-inner");
 
 //Load dayjs relative time plugin
 dayjs.extend(window.dayjs_plugin_relativeTime);
-const API_KEY = "57693c20cc9de93006be32fd645ff9bb";
+const API_KEY = "6afdca3269d40e485ee98de1af3ed1db";
 
 
 //Get users from local storage
@@ -156,10 +156,14 @@ const userFirstNameEl = $("#first-name");
 const userLastNameEl = $("#last-name");
 const userDateOfBirthEl = $("#user-dob");
 const userAddressEl = $("#user-address");
+const userCityEl = $("#user-city");
+const userCountryEl = $("#user-country");
+const userZipCodeEl = $("#user-zipcode");
+
 const allFields = $([]).add(userFirstNameEl).add(userLastNameEl).add(userDateOfBirthEl).add(userAddressEl);
 const userErrMsgEl = $(".validateTips");
 const userSuccessMsgEl = $(".successMsg");
-
+const MINOR_AGE_LIMIT = 12;
 
 
 
@@ -191,6 +195,8 @@ function checkLength(textInput, fieldName) {
     }
 }
 
+
+
 function addUser() {
 
     // add code to validate and add user to local storage
@@ -204,6 +210,11 @@ function addUser() {
     valid = valid && checkLength(userLastNameEl, "Last Name");
     valid = valid && checkLength(userDateOfBirthEl, "Date of birth");
     valid = valid && checkLength(userAddressEl, "Address");
+    valid = valid && checkLength(userCityEl, "City");
+    valid = valid && checkLength(userCountryEl, "Country");
+    valid = valid && checkLength(userZipCodeEl, "Zip Code");
+
+
 
     if (valid) {
         console.log("All form validations successful");
@@ -218,11 +229,11 @@ function addUser() {
         // Calculate the difference in years
         const ageInYears = currentDate.diff(userDateOfBirthEl.val(), 'year');
 
-        if (ageInYears < 18) {
+        if (ageInYears < MINOR_AGE_LIMIT) {
             isMinorAge = true;
         }
 
-        console.log(`The person's age is approximately ${ageInYears} years.`);
+        console.log(`The person's age is approximately ${ageInYears} years and is minor check: ${isMinorAge}`);
 
 
         const newUserToCreate = {
@@ -231,6 +242,9 @@ function addUser() {
             lastname: userLastNameEl.val(),
             dateofbirth: userDateOfBirthEl.val(),
             address: userAddressEl.val(),
+            usercity: userCityEl.val(),
+            usercountry: userCountryEl.val(),
+            userzipcode: userZipCodeEl.val(),
             isminor: isMinorAge,
         };
 
@@ -250,7 +264,7 @@ $("#add-user").button().on("click", function () {
 
 var dialog = $("#dialog-form").dialog({
     autoOpen: false,
-    height: 500,
+    height: 525,
     width: 500,
     modal: true,
     buttons: {
@@ -286,11 +300,118 @@ $(document).ready(function () {
     $('#user-dob').datepicker({
         changeMonth: true,
         changeYear: true,
+        yearRange: "-100:+0",
+        maxDate: '0',
     });
 });
 
 
+// Logic to display the map and map markers.
+
+let map;
+// initMap is now async
+async function initMap() {
+    // Request libraries when needed, not in the script tag.
+    let { Map } = await google.maps.importLibrary("maps");
+    let { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+    // Short namespaces can be used.
+    map = new Map(document.getElementById("map"), {
+        center: new google.maps.LatLng(-37.81400000, 144.96332000),
+        zoom: 6,
+        mapId: "DEMO_MAP_ID",
+    });
 
 
+
+    addMapMarkers(
+        {
+            locationcoords: new google.maps.LatLng(-37.81400000, 144.96332000),
+            markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+            titleTxt: "titletxt",
+            markerInfo: "Marker Pin Information"
+        }
+    );
+
+    addMapMarkers(
+        {
+            locationcoords: new google.maps.LatLng(-34.921230, 138.599503),
+            markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+            titleTxt: "titletxt1",
+            markerInfo: "Marker Pin Information1"
+        }
+    );
+
+    addMapMarkers(
+        {
+            locationcoords: new google.maps.LatLng(-36.848461, 174.763336),
+            // markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+            titleTxt: "titletxt2",
+            markerInfo: "Marker Pin Information3"
+        }
+    );
+
+    //function to add markers 
+    function addMapMarkers(markerDetails) {
+        // A marker with a with a URL pointing to a PNG.
+        let markerImage;
+        let markerInformation = document.createElement("p")
+        markerInformation.textContent = markerDetails.markerInfo;
+
+        //if no custom marker image then default marker pin
+        if (markerDetails.markerimg != null || markerDetails.markerimg != undefined) {
+            markerImage = document.createElement("img");
+            markerImage.src =
+                markerDetails.markerimg;
+        }
+
+        //create new marker and set the marker parameters.
+        let marker = new AdvancedMarkerElement({
+            map,
+            position: markerDetails.locationcoords,
+            content: markerImage,
+            title: markerDetails.titleTxt,
+        });
+
+        console.log(marker.position);
+
+        //create new marker information window and set the marker info parameters.
+        let markerInfo = new google.maps.InfoWindow({
+
+            content: markerInformation,
+        });
+
+        // create an event listener for the info window to open
+        marker.addListener('click', function () {
+            markerInfo.open(map, marker);
+        });
+
+
+    }
+
+}
+
+
+
+initMap();
+
+
+
+// //create marker
+// const marker = new AdvancedMarkerElement({
+//     map,
+//     position: { lat: -37.81400000, lng: 144.96332000 },
+//     title: "SHWETA",
+//     content: beachFlagImg,
+// });
+
+// var markerInfo = new google.maps.InfoWindow({
+
+//     content: '<p>User Name</p>'
+// });
+
+// marker.addListener('click', function () {
+//     markerInfo.open(map, marker);
+// });
 
 //Add User Code Ends 
