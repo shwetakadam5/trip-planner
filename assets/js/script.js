@@ -9,11 +9,14 @@ dayjs.extend(window.dayjs_plugin_relativeTime);
 const API_KEY = "6afdca3269d40e485ee98de1af3ed1db";
 
 
-//Get users from local storage
+//Function to get users from local storage
 const getLocalUsers = () => {
     const users = JSON.parse(localStorage.getItem("users"));
     return users;
 };
+
+
+//Function to save the users to the local storage.
 
 const addUsers = (newUserDetails) => {
     let users = getLocalUsers();
@@ -151,7 +154,8 @@ $(".card-header-icon").on("click", (e) => {
 
 //Add User Code Starts - Shweta
 
-
+const API_KEY_GEO = "6afdca3269d40e485ee98de1af3ed1db";
+const API_KEY_MAPS = "AIzaSyB9ViKmP3YhPiC9Mqz6jdr9Rio9MrtItaE";
 const userFirstNameEl = $("#first-name");
 const userLastNameEl = $("#last-name");
 const userDateOfBirthEl = $("#user-dob");
@@ -166,46 +170,53 @@ const userSuccessMsgEl = $(".successMsg");
 const MINOR_AGE_LIMIT = 12;
 
 
+//Function to update the error message and highlight the fields
+function updateErrorMsg(errMsg) {
 
-
-function updateErrMsg(errMsg) {
-    console.log(errMsg);
     userErrMsgEl
         .text(errMsg)
         .addClass("ui-state-highlight");
     setTimeout(function () {
         userErrMsgEl.removeClass("ui-state-highlight", 1500);
     }, 500);
+
 }
 
+
+//Function to validate the input fields of the user
 function checkLength(textInput, fieldName) {
 
     if (textInput.val() == "") {
-        console.log("hiiiiiii" + textInput.val());
+
         textInput.addClass("ui-state-error");
-        updateErrMsg(fieldName + " is required.");
+        updateErrorMsg(fieldName + " is required.");
         return false;
+
     } else if (textInput.val() == " ") {
+
         textInput.addClass("ui-state-error");
-        updateErrMsg(fieldName + " must be valid");
+        updateErrorMsg(fieldName + " must be valid");
         return false;
 
     } else {
+
         return true;
+
     }
 }
 
 
+//Function to add a user. This function validates the input fields and stores the validated details in local storage
+// It also updates the coordinates for the city by invoking the weather api and provides a user age check parameter. 
 
 function addUser() {
 
-    // add code to validate and add user to local storage
-    console.log("In addUser function");
+    // add code to validate and add user to local storage  
 
     let valid = true;
     let isMinorAge = false;
+    const redirectUrl = './servererrorpage.html';
     allFields.removeClass("ui-state-error");
-    console.log(userFirstNameEl.val());
     valid = valid && checkLength(userFirstNameEl, "First Name");
     valid = valid && checkLength(userLastNameEl, "Last Name");
     valid = valid && checkLength(userDateOfBirthEl, "Date of birth");
@@ -215,16 +226,11 @@ function addUser() {
     valid = valid && checkLength(userZipCodeEl, "Zip Code");
 
 
-
     if (valid) {
         console.log("All form validations successful");
-        // age calc
 
-
-        const currentDate = dayjs(); // Current date
-
-        console.log(currentDate);
-        console.log(userDateOfBirthEl.val());
+        // Validate the age and update if user is a minor.
+        const currentDate = dayjs();
 
         // Calculate the difference in years
         const ageInYears = currentDate.diff(userDateOfBirthEl.val(), 'year');
@@ -252,44 +258,50 @@ function addUser() {
             },
         };
 
-        //start to get coords
-
+        //start to get location coords
         if (userCityEl.val().trim() != "") {
             let cityName = userCityEl.val().toLowerCase();
-            const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=1&appid=${API_KEY}`;
+            const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=1&appid=${API_KEY_GEO}`;
             fetch(geoUrl)
                 .then(function (response) {
-                    return response.json();
+
+                    if (!response.ok) {
+                        alert(`Error Msg: ${response.statusText}. Redirecting to error page.`);
+                        location.href = (redirectUrl);
+                    } else {
+                        return response.json();
+                    }
                 })
                 .then(function (data) {
-                    let coordinates = {
-                        lat: data[0].lat,
-                        lon: data[0].lon
+                    if (!Object.keys(data).length) {
+                        console.log('No data found');
+                        alert(`Error Msg: No data found :Invalid city. Redirecting to error page.`);
+                        location.href = (redirectUrl);
+                    } else {
+                        console.log('Data received:', data);
+
+
+                        let coordinates = {
+                            lat: data[0].lat,
+                            lon: data[0].lon
+                        }
+                        newUserToCreate.userlocationcoordinates.lat = coordinates.lat;
+                        newUserToCreate.userlocationcoordinates.lon = coordinates.lon;
+
+                        addUsers(newUserToCreate); // Stores data in local storage.
+                        initMap(); // Invoked to create user location markers on the map.
+                        dialog.dialog("close");
                     }
-                    newUserToCreate.userlocationcoordinates.lat = coordinates.lat;
-                    newUserToCreate.userlocationcoordinates.lon = coordinates.lon;
-
-                    console.log(newUserToCreate);
-                    addUsers(newUserToCreate);
-
-
-                    initMap();
-                    dialog.dialog("close");
-
                 });
-
-
         }
-        //end to get coords
-
-
+        //end to get location coords
     }
     return valid;
 }
 
-
+// Event listerner to open the create user modal dialog
 $("#add-user").button().on("click", function () {
-    console.log("In event listener to open create user dialog");
+
     dialog.dialog("open");
 });
 
@@ -309,24 +321,23 @@ let dialog = $("#dialog-form").dialog({
     close: function () {
         //add code to reset the form fields
         console.log("In close function");
-        console.log(userform[0]);
         userform[0].reset();
         allFields.removeClass("ui-state-error");
 
-        userErrMsgEl.text("All form fields are required.");
+        userErrMsgEl.text("All form fields are required."); //reset the user form
         userSuccessMsgEl.attr("display", "block");
-
 
     }
 });
 
+// Event to identify if the submit of user form was clicked.
 let userform = dialog.find("form").on("submit", function (event) {
     event.preventDefault();
     addUser();
 });
 
 
-// When the page loads make the  date field a date picker
+// When the page loads make the  date field a date picker and also initialize the map
 $(document).ready(function () {
 
     initMap();
@@ -337,6 +348,7 @@ $(document).ready(function () {
         yearRange: "-100:+0",
         maxDate: '0',
     });
+
 });
 
 
@@ -348,9 +360,7 @@ async function initMap() {
 
     console.log("INIT MAP INVOKED")
 
-    let addedUsers = getLocalUsers();
-
-
+    let addedUsers = getLocalUsers(); //retrieve the users from localstorage
 
     // Request libraries when needed, not in the script tag.
     let { Map } = await google.maps.importLibrary("maps");
@@ -362,108 +372,59 @@ async function initMap() {
         zoom: 6,
         mapId: "DEMO_MAP_ID",
     });
-    if (addedUsers != null)
+
+    if (addedUsers != null) {
         for (const user of addedUsers) {
-            console.log("In the user loop")
-            console.log(user);
             addMapMarkers({
                 locationcoords: new google.maps.LatLng(user.userlocationcoordinates.lat, user.userlocationcoordinates.lon),
-                markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-                titleTxt: user.firstname,
-                markerInfo: user.firstname + "" + user.usercity,
-
+                //markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+                // titleTxt: user.firstname,
+                markerInfo: "Info ( User Name : " + user.firstname + " " + user.lastname + " & City : " + user.usercity + " )",
             });
         }
 
+        //function to add markers 
+        function addMapMarkers(markerDetails) {
+            // A marker with a with a URL pointing to a PNG.
+            let markerImage;
+            let markerInformation = document.createElement("p")
+            markerInformation.textContent = markerDetails.markerInfo;
 
-    // addMapMarkers(
-    //     {
-    //         locationcoords: new google.maps.LatLng(-37.81400000, 144.96332000),
-    //         markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-    //         titleTxt: "titletxt",
-    //         markerInfo: "Marker Pin Information"
-    //     }
-    // );
+            //if no custom marker image then default marker pin
+            if (markerDetails.markerimg != null || markerDetails.markerimg != undefined) {
+                markerImage = document.createElement("img");
+                markerImage.src =
+                    markerDetails.markerimg;
+            }
 
-    // addMapMarkers(
-    //     {
-    //         locationcoords: new google.maps.LatLng(-34.921230, 138.599503),
-    //         markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-    //         titleTxt: "titletxt1",
-    //         markerInfo: "Marker Pin Information1"
-    //     }
-    // );
+            //create new marker and set the marker parameters.
+            let marker = new AdvancedMarkerElement({
+                map,
+                position: markerDetails.locationcoords,
+                content: markerImage,
+                title: markerDetails.titleTxt,
+            });
 
-    // addMapMarkers(
-    //     {
-    //         locationcoords: new google.maps.LatLng(-36.848461, 174.763336),
-    //         // markerimg: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-    //         titleTxt: "titletxt2",
-    //         markerInfo: "Marker Pin Information3"
-    //     }
-    // );
+            //create new marker information window and set the marker info parameters.
+            let markerInfo = new google.maps.InfoWindow({
+                content: markerInformation,
+            });
 
-    //function to add markers 
-    function addMapMarkers(markerDetails) {
-        // A marker with a with a URL pointing to a PNG.
-        let markerImage;
-        let markerInformation = document.createElement("p")
-        markerInformation.textContent = markerDetails.markerInfo;
+            // create an event listener for the info window to open
+            marker.addListener('click', function () {
+                markerInfo.open(map, marker);
+            });
 
-        //if no custom marker image then default marker pin
-        if (markerDetails.markerimg != null || markerDetails.markerimg != undefined) {
-            markerImage = document.createElement("img");
-            markerImage.src =
-                markerDetails.markerimg;
+
         }
-
-        //create new marker and set the marker parameters.
-        let marker = new AdvancedMarkerElement({
-            map,
-            position: markerDetails.locationcoords,
-            content: markerImage,
-            title: markerDetails.titleTxt,
-        });
-
-        console.log(marker.position);
-
-        //create new marker information window and set the marker info parameters.
-        let markerInfo = new google.maps.InfoWindow({
-
-            content: markerInformation,
-        });
-
-        // create an event listener for the info window to open
-        marker.addListener('click', function () {
-            markerInfo.open(map, marker);
-        });
-
-
     }
 
 }
 
-
-
-
-
-
-
-// //create marker
-// const marker = new AdvancedMarkerElement({
-//     map,
-//     position: { lat: -37.81400000, lng: 144.96332000 },
-//     title: "SHWETA",
-//     content: beachFlagImg,
-// });
-
-// var markerInfo = new google.maps.InfoWindow({
-
-//     content: '<p>User Name</p>'
-// });
-
-// marker.addListener('click', function () {
-//     markerInfo.open(map, marker);
-// });
-
-//Add User Code Ends 
+// Maps API invocation
+(g => { var h, a, k, p = "The Google Maps JavaScript API", c = "google", l = "importLibrary", q = "__ib__", m = document, b = window; b = b[c] || (b[c] = {}); var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams, u = () => h || (h = new Promise(async (f, n) => { await (a = m.createElement("script")); e.set("libraries", [...r] + ""); for (k in g) e.set(k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()), g[k]); e.set("callback", c + ".maps." + q); a.src = `https://maps.${c}apis.com/maps/api/js?` + e; d[q] = f; a.onerror = () => h = n(Error(p + " could not load.")); a.nonce = m.querySelector("script[nonce]")?.nonce || ""; m.head.append(a) })); d[l] ? console.warn(p + " only loads once. Ignoring:", g) : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)) })({
+    key: API_KEY_MAPS,
+    v: "weekly",
+    // Use the 'v' parameter to indicate the version to use (weekly, beta, alpha, etc.).
+    // Add other bootstrap parameters as needed, using camel case.
+});
