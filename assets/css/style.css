@@ -117,6 +117,7 @@ img.card-header-title {
     z-index: 101;
 }
 
+
 .successMsg {
     display: none;
     background-color: green;
@@ -125,6 +126,12 @@ img.card-header-title {
 
 .modal-content {
     max-width: 30rem;
+    max-height: 55rem;
+}
+
+#dialog-form.modal {
+    height: 560px !important;
+
 }
 
 #map {
